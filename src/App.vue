@@ -76,7 +76,7 @@
             group="tasks"
           >
             <div
-              v-bind:class="{ dark: darkMode }"
+              v-bind:class="{ dark: darkMode, priority1: element.priority === '1', priority2: element.priority === '2', priority3: element.priority === '3' }"
               class="list-group-item"
               v-for="(element, index) in arrInProgress"
               :key="element.name"
@@ -105,7 +105,7 @@
             group="tasks"
           >
             <div
-              v-bind:class="{ dark: darkMode }"
+              v-bind:class="{ dark: darkMode, priority1: element.priority === '1', priority2: element.priority === '2', priority3: element.priority === '3' }"
               class="list-group-item"
               v-for="(element, index) in arrDone"
               :key="element.name"
