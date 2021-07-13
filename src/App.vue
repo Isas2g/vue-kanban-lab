@@ -28,6 +28,12 @@
           placeholder="Текст"
           @keyup.enter="add"
         ></b-form-input>
+          <input type="radio" id="one" value="1" v-model="priority">
+          <label for="one">1</label>
+          <input type="radio" id="two" value="2" v-model="priority">
+          <label for="two">2</label>
+          <input type="radio" id="three" value="3" v-model="priority">
+          <label for="three">3</label>
         <b-button @click="add" variant="primary" class="ml-3">Добавить</b-button>
       </div>
     </div>
@@ -35,21 +41,27 @@
     
       <div class="col-4">
         <div class="p-2 alert alert-secondary">
-          <h2>Задачи</h2>
+          <h2>Задачи {{ arrBackLog.length }}</h2>
           <draggable
             class="list-group kanban-column"
             :list="arrBackLog"
             group="tasks"
           >
             <div
-              v-bind:class="{ dark: darkMode }"
+              v-bind:class="{ dark: darkMode, priority1: element.priority === '1', priority2: element.priority === '2', priority3: element.priority === '3'}"
               class="list-group-item"
               v-for="(element, index) in arrBackLog"
               :key="element.name"
             >
-              <h3>{{ element.name }}</h3>
+              <h3>{{ index + 1 }} {{ element.name }}</h3>
               <p>{{ element.text }}</p>
+              <p>{{ element.date }}</p>
               <div class="edit"><img @click="showPopup(index, 'arrBackLog')" src="./assets/edit.svg" alt=""></div>
+              
+              <div>
+                <button @click="move(index, 'arrBackLog', 'arrInProgress')" class="alert-primary">Вправо</button>
+              </div>
+              
             </div>
           </draggable>
         </div>
@@ -57,7 +69,7 @@
 
       <div class="col-4">
         <div class="p-2 alert alert-primary">
-          <h2>В процессе</h2>
+          <h2>В процессе {{ arrInProgress.length }}</h2>
           <draggable
             class="list-group kanban-column"
             :list="arrInProgress"
@@ -69,9 +81,16 @@
               v-for="(element, index) in arrInProgress"
               :key="element.name"
             >
-              <h3>{{ element.name }}</h3>
+              <h3>{{ index + 1}} {{ element.name }}</h3>
               <p>{{ element.text }}</p>
+              <p>{{ element.date }}</p>
               <div class="edit"><img @click="showPopup(index, 'arrInProgress')" src="./assets/edit.svg" alt=""></div>
+              
+              <div>
+                <button @click="move(index, 'arrInProgress', 'arrBackLog')" class="alert-secondary">Влево</button>
+                <button @click="move(index, 'arrInProgress', 'arrDone')" class="alert-success">Вправо</button>
+              </div>
+              
             </div>
           </draggable>
         </div>
@@ -79,7 +98,7 @@
 
       <div class="col-4">
         <div class="p-2 alert alert-success">
-          <h2>Завершено</h2>
+          <h2>Завершено {{ arrDone.length }}</h2>
           <draggable
             class="list-group kanban-column"
             :list="arrDone"
@@ -91,11 +110,16 @@
               v-for="(element, index) in arrDone"
               :key="element.name"
             >
-              <h3>{{ element.name }}</h3>
+              <h3>{{ index + 1 }} {{ element.name }}</h3>
               <p>{{ element.text }}</p>
+              <p>{{ element.date }}</p>
               <div class="edit">
                 <img @click="deleteElement(index)" src="./assets/delete.svg" alt="">
                 <img @click="showPopup(index, 'arrDone')" src="./assets/edit.svg" alt="">
+              </div>
+              
+              <div>
+                <button @click="move(index, 'arrDone', 'arrInProgress')" class="alert-primary">Влево</button>
               </div>
               
             </div>
@@ -106,14 +130,26 @@
     </div>
     
     <div v-bind:class="{ dark: darkMode }" class="shadow">
-      <form v-bind:class="{ dark: darkMode }" class="form">
+      <form @submit.prevent="edit" v-bind:class="{ dark: darkMode }" class="form">
         <div @click="closePopup" class="cross">+</div>
         <h3>Редактировать запись</h3>
         <label for="name">Название</label>
-        <input v-bind:class="{ dark: darkMode }" v-model="editTaskName" required type="text" id="name" placeholder="Название">
+        <input v-bind:class="{ dark: darkMode }" v-model="editTaskName" type="text" id="name" placeholder="Название">
         <label for="text">Текст</label>
-        <input v-bind:class="{ dark: darkMode }" v-model="editTaskText" required type="text" id="text" placeholder="Текст">
-        <button @click="edit">Изменить</button>
+        <input v-bind:class="{ dark: darkMode }" v-model="editTaskText" type="text" id="text" placeholder="Текст">
+        <div>
+          <input type="radio" id="one" value="1" v-model="editPrior">
+          <label for="one">1</label>
+        </div>
+        <div>
+          <input type="radio" id="two" value="2" v-model="editPrior">
+          <label for="two">2</label>
+        </div>
+        <div>
+          <input type="radio" id="three" value="3" v-model="editPrior">
+          <label for="three">3</label>
+        </div>
+        <button>Изменить</button>
       </form>
     </div>
     
@@ -142,12 +178,14 @@ export default {
       editTaskName: "",
       editTaskText: "",
       indexOfEdited: 0,
+      priority: '3',
+      editPrior: '3',
       array: '',
       darkMode: false,
       // 4 arrays to keep track of our 4 statuses
       arrBackLog: [
-        { name: "Здрасьте", text: 'Помыть посуду раз два раз два' },
-        { name: "Привет", text: 'Помыть посуду раз три сорок шесть' },
+        { name: "Здрасьте", text: 'Помыть посуду раз два раз два', date: (new Date()).toLocaleString('en-GB'), priority: '1' },
+        { name: "Привет", text: 'Помыть посуду раз три сорок шесть', date: (new Date()).toLocaleString('en-GB'), priority: '2' },
       ],
       arrInProgress: [],
       arrDone: []
@@ -157,19 +195,18 @@ export default {
     //add new tasks method
     add: function() {
       if (this.newTaskName && this.newTaskText) {
-        this.arrBackLog.push({ name: this.newTaskName, text: this.newTaskText });
+        this.arrBackLog.push({ name: this.newTaskName, text: this.newTaskText, date: (new Date()).toLocaleString('en-GB'), priority: this.priority });
         this.newTaskName = "";
         this.newTaskText = "";
       }
     },
     edit: function() {
-      if (this.editTaskName && this.editTaskText) {
-        this[this.array][this.indexOfEdited].name = this.editTaskName;
-        this[this.array][this.indexOfEdited].text = this.editTaskText;
-        this.editTaskName = '';
-        this.editTaskText = '';
-        document.getElementsByClassName('shadow')[0].classList.remove('active');
-      }
+      if (this.editTaskName) this[this.array][this.indexOfEdited].name = this.editTaskName;
+      if (this.editTaskText) this[this.array][this.indexOfEdited].text = this.editTaskText;
+      if (this.editPrior) this[this.array][this.indexOfEdited].priority = this.editPrior;
+      this.editTaskName = '';
+      this.editTaskText = '';
+      document.getElementsByClassName('shadow')[0].classList.remove('active');
     },
     showPopup: function(index, array) {
       document.getElementsByClassName('shadow')[0].classList.add('active');
@@ -177,6 +214,8 @@ export default {
       this.array = array;
     },
     closePopup: function() {
+      this.editTaskName = '';
+      this.editTaskText = '';
       document.getElementsByClassName('shadow')[0].classList.remove('active');
     },
     deleteElement: function(index) {
@@ -194,7 +233,13 @@ export default {
       }
       
       document.getElementsByTagName('body')[0].classList.toggle('dark');
-    }
+    },
+    move: function(index, array, toArray) {
+      let el = this[array][index];
+      this[toArray].push(el)
+      this[array].splice(index, 1);
+    },
+    
   }
 };
 </script>
@@ -308,5 +353,18 @@ input.dark::placeholder {
 
 footer {
     text-align: center;
+}
+
+.list-group-item.priority1 {
+  color: red;
+}
+.priority2 {
+  color: blue;
+}
+.priority2.dark {
+  color: yellow;
+}
+.priority3.dark {
+  color: #fff;
 }
 </style>
